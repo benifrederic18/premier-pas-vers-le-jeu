@@ -23,6 +23,7 @@ export default function Etape1({ data, update, onNext }: Props) {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<Etape1Form>({
     defaultValues: {
@@ -35,8 +36,14 @@ export default function Etape1({ data, update, onNext }: Props) {
   });
 
   const onSubmit: SubmitHandler<Etape1Form> = (values) => {
-    const parsed = etape1Schema.safeParse({ ...values, age: parseInt(values.age) });
-    if (!parsed.success) return;
+    const parsed = etape1Schema.safeParse({ ...values, age: Number(values.age) });
+    if (!parsed.success) {
+      parsed.error.issues.forEach((issue) => {
+        const field = issue.path[0] as keyof Etape1Form;
+        if (field) setError(field, { message: issue.message });
+      });
+      return;
+    }
     update({ ...parsed.data, age: String(parsed.data.age) });
     onNext();
   };
@@ -73,7 +80,7 @@ export default function Etape1({ data, update, onNext }: Props) {
       <InputField
         label="Âge"
         error={errors.age?.message}
-        {...register('age', { valueAsNumber: true })}
+        {...register('age')}
         placeholder="Ex : 24"
         type="number"
         min={16}

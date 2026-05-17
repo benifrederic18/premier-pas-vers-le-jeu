@@ -3,9 +3,10 @@ import { z } from 'zod';
 export const etape1Schema = z.object({
   nom: z.string().min(2, 'Le nom doit contenir au moins 2 caracteres'),
   prenoms: z.string().min(2, 'Les prenoms doivent contenir au moins 2 caracteres'),
-  telephone: z
-    .string()
-    .regex(/^(\+229)?[0-9]{8}$/, 'Format invalide. Ex : +22901234567 ou 01234567'),
+  telephone: z.string().refine(
+    (v) => /^\+?[0-9\s\-().]{8,}$/.test(v) && v.replace(/[\s\-().+]/g, '').length >= 8,
+    'Format invalide. Ex : +22901234567 ou 01234567'
+  ),
   email: z.string().email('Format email invalide. Ex : nom@example.com'),
   age: z.coerce
     .number()
