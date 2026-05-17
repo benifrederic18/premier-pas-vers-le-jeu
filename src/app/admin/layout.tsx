@@ -1,12 +1,14 @@
 export const dynamic = 'force-dynamic';
 
 import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
 import AdminNav from '@/components/admin/AdminNav';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  if (!session) redirect('/admin/login');
+
+  if (!session) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex">
