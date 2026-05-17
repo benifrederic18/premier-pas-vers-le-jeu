@@ -19,7 +19,7 @@ export const etape2Schema = z.object({
   professionnel: z.boolean(),
   motivation: z
     .string()
-    .min(50, 'Votre motivation doit contenir au moins 50 caracteres')
+    .min(1, 'Veuillez indiquer votre motivation')
     .max(500, 'Maximum 500 caracteres'),
 });
 
