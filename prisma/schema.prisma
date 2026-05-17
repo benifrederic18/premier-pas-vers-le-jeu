@@ -1,0 +1,104 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Inscription {
+  id                      String            @id @default(cuid())
+  nom                     String
+  prenoms                 String
+  telephone               String
+  email                   String
+  age                     Int
+  dejaForme               Boolean
+  professionnel           Boolean
+  motivation              String            @db.Text
+  photoBase64             String?           @db.Text
+  photoMimeType           String?
+  photoSize               Int?
+  statut                  StatutInscription @default(EN_ATTENTE_PAIEMENT)
+  montantPaye             Float?
+  transactionId           String?           @unique
+  fedapayTransactionId    String?
+  sourceUtm               String?
+  ipAddress               String?
+  userAgent               String?
+  dateInscription         DateTime          @default(now())
+  datePaiement            DateTime?
+  dateRelance             DateTime?
+  emailConfirmationEnvoye Boolean           @default(false)
+  emailRelanceEnvoye      Boolean           @default(false)
+  nombreRelances          Int               @default(0)
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  @@index([email])
+  @@index([telephone])
+  @@index([statut])
+  @@index([dateInscription])
+}
+
+enum StatutInscription {
+  EN_ATTENTE_PAIEMENT
+  PAIEMENT_EN_COURS
+  PAYE
+  ECHEC_PAIEMENT
+  REMBOURSE
+  ANNULE
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  nom          String
+  passwordHash String
+  role         Role     @default(ADMIN)
+  actif        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  LECTEUR
+}
+
+model LogEmail {
+  id            String      @id @default(cuid())
+  inscriptionId String?
+  destinataire  String
+  typeEmail     TypeEmail
+  sujet         String
+  statut        StatutEmail
+  erreur        String?
+  createdAt     DateTime    @default(now())
+}
+
+enum TypeEmail {
+  CONFIRMATION_PAIEMENT
+  RELANCE_PAIEMENT
+  EMAIL_GROUPE
+  NOTIFICATION_ADMIN
+}
+
+enum StatutEmail {
+  ENVOYE
+  ECHEC
+  EN_ATTENTE
+}
+
+model ParametresSite {
+  id                  String   @id @default(cuid())
+  formationActive     Boolean  @default(true)
+  placesDisponibles   Int      @default(50)
+  tarifFormation      Float    @default(30000)
+  dateDebut           DateTime
+  dateFin             DateTime
+  delaiRelanceMinutes Int      @default(10)
+  updatedAt           DateTime @updatedAt
+}
