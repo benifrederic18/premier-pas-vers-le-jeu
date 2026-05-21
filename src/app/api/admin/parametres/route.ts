@@ -17,13 +17,22 @@ export async function PUT(req: NextRequest) {
   const body = await req.json();
   const existing = await prisma.parametresSite.findFirst();
 
-  const data = {
+  const data: any = {
     formationActive: Boolean(body.formationActive),
+    messageInscriptionFermee: body.messageInscriptionFermee || null,
     placesDisponibles: parseInt(body.placesDisponibles),
     tarifFormation: parseFloat(body.tarifFormation),
+    tarifTranche: parseFloat(body.tarifTranche || 15000),
     dateDebut: new Date(body.dateDebut),
     dateFin: new Date(body.dateFin),
     delaiRelanceMinutes: parseInt(body.delaiRelanceMinutes),
+    delaiRelanceTranche2Jours: parseInt(body.delaiRelanceTranche2Jours || 7),
+    lienWhatsapp: body.lienWhatsapp || null,
+    facebookUrl: body.facebookUrl || null,
+    instagramUrl: body.instagramUrl || null,
+    youtubeUrl: body.youtubeUrl || null,
+    tiktokUrl: body.tiktokUrl || null,
+    emailGmail: body.emailGmail || null,
   };
 
   const params = existing

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { formatDate, formatMontant, getStatutLabel } from '@/lib/utils';
+import { getPhotoSrc } from '@/lib/photo';
 
 interface Props {
   id: string;
@@ -44,10 +45,10 @@ export default function InscriptionModal({ id, onClose, onRefresh }: Props) {
         ) : inscription ? (
           <div className="p-6 space-y-5">
             {/* Photo */}
-            {inscription.photoBase64 && (
+            {getPhotoSrc(inscription.photoUrl, inscription.photoBase64, inscription.photoMimeType) && (
               <div className="flex justify-center">
                 <img
-                  src={`data:${inscription.photoMimeType};base64,${inscription.photoBase64}`}
+                  src={getPhotoSrc(inscription.photoUrl, inscription.photoBase64, inscription.photoMimeType)!}
                   alt="Photo"
                   className="w-24 h-24 rounded-full object-cover border-2 border-orange-500"
                 />

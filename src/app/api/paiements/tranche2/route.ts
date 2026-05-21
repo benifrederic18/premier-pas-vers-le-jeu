@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
-    const { inscriptionId, modePaiement } = await req.json();
+    const { inscriptionId } = await req.json();
 
     if (!inscriptionId) {
       return NextResponse.json({ error: 'ID inscription manquant.' }, { status: 400 });
@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Inscription introuvable.' }, { status: 404 });
     }
 
-    if (inscription.statut === 'PAYE') {
-      return NextResponse.json({ error: 'Cette inscription est déjà payée.' }, { status: 400 });
+    if (inscription.statut !== 'TRANCHE1_PAYEE') {
+      return NextResponse.json({ error: 'La 1ère tranche doit être payée d\'abord.' }, { status: 400 });
     }
 
     const { FedaPay, Transaction } = await import('fedapay');
@@ -23,14 +23,10 @@ export async function POST(req: NextRequest) {
     FedaPay.setEnvironment(process.env.FEDAPAY_ENVIRONMENT === 'live' ? 'live' : 'sandbox');
 
     const params = await prisma.parametresSite.findFirst();
-    const isTranche = modePaiement === 'TRANCHE' || inscription.modePaiement === 'TRANCHE';
-    const montant = isTranche
-      ? (params?.tarifTranche ?? 15000)
-      : (params?.tarifFormation ?? 30000);
+    const montant = params?.tarifTranche ?? 15000;
 
-    const trancheLabel = isTranche ? ' — 1ère tranche' : '';
     const transaction = await Transaction.create({
-      description: `Inscription${trancheLabel} - PREMIER PAS VERS LE JEU - ${inscription.nom} ${inscription.prenoms}`,
+      description: `Inscription 2ème tranche - PREMIER PAS VERS LE JEU - ${inscription.nom} ${inscription.prenoms}`,
       amount: montant,
       currency: { iso: 'XOF' },
       callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/paiements/callback`,
@@ -42,7 +38,7 @@ export async function POST(req: NextRequest) {
       },
       custom_metadata: {
         inscription_id: inscription.id,
-        tranche: isTranche ? '1' : 'complet',
+        tranche: '2',
       },
     } as any);
 
@@ -51,16 +47,13 @@ export async function POST(req: NextRequest) {
     await prisma.inscription.update({
       where: { id: inscription.id },
       data: {
-        fedapayTransactionId: String(transaction.id),
-        fedapayTranche1Id: isTranche ? String(transaction.id) : undefined,
-        statut: 'PAIEMENT_EN_COURS',
-        modePaiement: isTranche ? 'TRANCHE' : 'COMPLET',
+        fedapayTranche2Id: String(transaction.id),
       },
     });
 
     return NextResponse.json({ checkoutUrl: token.url });
   } catch (error: any) {
-    console.error('Erreur création paiement:', error);
+    console.error('Erreur création paiement tranche 2:', error);
     return NextResponse.json({ error: 'Erreur lors de la création du paiement.' }, { status: 500 });
   }
 }

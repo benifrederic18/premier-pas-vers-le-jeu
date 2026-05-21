@@ -17,13 +17,31 @@ model Inscription {
   dejaForme               Boolean
   professionnel           Boolean
   motivation              String            @db.Text
+  photoUrl                String?
   photoBase64             String?           @db.Text
   photoMimeType           String?
   photoSize               Int?
+
+  modePaiement            ModePaiement      @default(COMPLET)
+  modeParticipation       ModeParticipation @default(PRESENTIEL)
+
   statut                  StatutInscription @default(EN_ATTENTE_PAIEMENT)
   montantPaye             Float?
   transactionId           String?           @unique
   fedapayTransactionId    String?
+
+  tranche1Payee           Boolean           @default(false)
+  tranche2Payee           Boolean           @default(false)
+  tranche1TransactionId   String?
+  tranche2TransactionId   String?
+  dateTranche1            DateTime?
+  dateTranche2            DateTime?
+  fedapayTranche1Id       String?
+  fedapayTranche2Id       String?
+  emailRelanceTranche2    Boolean           @default(false)
+  dateRelanceTranche2     DateTime?
+  nombreRelancesTranche2  Int               @default(0)
+
   sourceUtm               String?
   ipAddress               String?
   userAgent               String?
@@ -33,8 +51,12 @@ model Inscription {
   emailConfirmationEnvoye Boolean           @default(false)
   emailRelanceEnvoye      Boolean           @default(false)
   nombreRelances          Int               @default(0)
+  lienWhatsappEnvoye      Boolean           @default(false)
+
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt
+
+  campagneSoutien         CampagneSoutien?
 
   @@index([email])
   @@index([telephone])
@@ -45,10 +67,21 @@ model Inscription {
 enum StatutInscription {
   EN_ATTENTE_PAIEMENT
   PAIEMENT_EN_COURS
+  TRANCHE1_PAYEE
   PAYE
   ECHEC_PAIEMENT
   REMBOURSE
   ANNULE
+}
+
+enum ModePaiement {
+  COMPLET
+  TRANCHE
+}
+
+enum ModeParticipation {
+  PRESENTIEL
+  EN_LIGNE
 }
 
 model Admin {
@@ -57,6 +90,7 @@ model Admin {
   nom          String
   passwordHash String
   role         Role     @default(ADMIN)
+  droits       Json?
   actif        Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -84,6 +118,10 @@ enum TypeEmail {
   RELANCE_PAIEMENT
   EMAIL_GROUPE
   NOTIFICATION_ADMIN
+  RELANCE_TRANCHE2
+  LIEN_WHATSAPP
+  NOTIFICATION_SPONSOR
+  NOTIFICATION_ACTION
 }
 
 enum StatutEmail {
@@ -93,12 +131,121 @@ enum StatutEmail {
 }
 
 model ParametresSite {
-  id                  String   @id @default(cuid())
-  formationActive     Boolean  @default(true)
-  placesDisponibles   Int      @default(50)
-  tarifFormation      Float    @default(30000)
-  dateDebut           DateTime
-  dateFin             DateTime
-  delaiRelanceMinutes Int      @default(10)
-  updatedAt           DateTime @updatedAt
+  id                         String   @id @default(cuid())
+  formationActive            Boolean  @default(true)
+  messageInscriptionFermee   String?  @db.Text
+  placesDisponibles          Int      @default(50)
+  tarifFormation             Float    @default(30000)
+  tarifTranche               Float    @default(15000)
+  dateDebut                  DateTime
+  dateFin                    DateTime
+  delaiRelanceMinutes        Int      @default(10)
+  delaiRelanceTranche2Jours  Int      @default(7)
+
+  lienWhatsapp               String?
+
+  facebookUrl                String?
+  instagramUrl               String?
+  youtubeUrl                 String?
+  tiktokUrl                  String?
+
+  emailGmail                 String?
+
+  updatedAt                  DateTime @updatedAt
+}
+
+model Sponsor {
+  id          String      @id @default(cuid())
+  nom         String
+  logoUrl     String
+  siteWeb     String?
+  description String?     @db.Text
+  type        TypeSponsor @default(PARTENAIRE)
+  ordre       Int         @default(0)
+  actif       Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum TypeSponsor {
+  SPONSOR
+  PARTENAIRE
+}
+
+model DemandePartenariat {
+  id           String      @id @default(cuid())
+  nom          String
+  organisation String
+  email        String
+  telephone    String
+  message      String      @db.Text
+  type         TypeSponsor @default(PARTENAIRE)
+  traite       Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+}
+
+model MediaGalerie {
+  id        String     @id @default(cuid())
+  type      TypeMedia
+  url       String
+  miniature String?
+  titre     String
+  edition   String?
+  ordre     Int        @default(0)
+  actif     Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+enum TypeMedia {
+  PHOTO
+  VIDEO
+}
+
+model CampagneSoutien {
+  id            String         @id @default(cuid())
+  inscriptionId String         @unique
+  inscription   Inscription    @relation(fields: [inscriptionId], references: [id], onDelete: Cascade)
+  slug          String         @unique
+  titre         String?
+  description   String?        @db.Text
+  actif         Boolean        @default(false)
+  objectif      Float?
+  totalCollecte Float          @default(0)
+  totalVotes    Int            @default(0)
+  contributions Contribution[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Contribution {
+  id                   String             @id @default(cuid())
+  campagneId           String
+  campagne             CampagneSoutien    @relation(fields: [campagneId], references: [id])
+  type                 TypeContribution
+  montant              Float
+  nombreVotes          Int?
+  donateur             String?
+  emailDonateur        String?
+  transactionId        String?            @unique
+  fedapayTransactionId String?
+  statut               StatutContribution @default(EN_ATTENTE)
+  message              String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([campagneId])
+  @@index([statut])
+}
+
+enum TypeContribution {
+  VOTE
+  MONTANT_FIXE
+  LIBRE
+}
+
+enum StatutContribution {
+  EN_ATTENTE
+  PAYE
+  ECHEC
 }

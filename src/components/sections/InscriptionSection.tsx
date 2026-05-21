@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 
@@ -12,6 +13,15 @@ const FormInscription = dynamic(() => import('../forms/FormInscription'), {
 });
 
 export default function InscriptionSection() {
+  const [params, setParams] = useState<{ formationActive: boolean; messageInscriptionFermee?: string; placesDisponibles?: number } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/admin/parametres')
+      .then((r) => r.json())
+      .then(setParams)
+      .catch(() => setParams({ formationActive: true }));
+  }, []);
+
   return (
     <section id="inscription" className="py-24 px-4 bg-white/[0.02]">
       <div className="max-w-5xl mx-auto">
@@ -30,12 +40,32 @@ export default function InscriptionSection() {
           <p className="text-gray-500">
             Complétez le formulaire en 3 étapes simples et payez de façon sécurisée
           </p>
-          <p className="mt-3 text-orange-400 font-semibold text-sm">
-            👥 50 places maximum
-          </p>
+          {params?.placesDisponibles && (
+            <p className="mt-3 text-orange-400 font-semibold text-sm">
+              👥 {params.placesDisponibles} places maximum
+            </p>
+          )}
         </motion.div>
 
-        <FormInscription />
+        {/* Inscriptions fermées */}
+        {params && !params.formationActive ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-2xl mx-auto"
+          >
+            <div className="card-dark rounded-3xl p-10 text-center border border-red-500/20">
+              <div className="text-6xl mb-4">🔒</div>
+              <h3 className="text-white text-2xl font-black mb-3">Inscriptions fermées</h3>
+              <p className="text-gray-400 leading-relaxed">
+                {params.messageInscriptionFermee ||
+                  'Les inscriptions sont actuellement fermées. Suivez nos réseaux sociaux pour être informé de la prochaine édition.'}
+              </p>
+            </div>
+          </motion.div>
+        ) : (
+          <FormInscription />
+        )}
       </div>
     </section>
   );

@@ -18,6 +18,8 @@ export type FormDataState = {
   motivation: string;
   photoFile: File | null;
   consentement: boolean;
+  modeParticipation: 'PRESENTIEL' | 'EN_LIGNE';
+  modePaiement: 'COMPLET' | 'TRANCHE';
 };
 
 const initialData: FormDataState = {
@@ -31,6 +33,8 @@ const initialData: FormDataState = {
   motivation: '',
   photoFile: null,
   consentement: false,
+  modeParticipation: 'PRESENTIEL',
+  modePaiement: 'COMPLET',
 };
 
 export default function FormInscription() {
@@ -53,18 +57,18 @@ export default function FormInscription() {
       fd.append('dejaForme', String(formData.dejaForme));
       fd.append('professionnel', String(formData.professionnel));
       fd.append('motivation', formData.motivation);
+      fd.append('modeParticipation', formData.modeParticipation);
+      fd.append('modePaiement', formData.modePaiement);
       if (formData.photoFile) fd.append('photo', formData.photoFile);
 
-      // Créer l'inscription
       const res = await fetch('/api/inscriptions/create', { method: 'POST', body: fd });
       const { inscriptionId, error } = await res.json();
       if (!res.ok) throw new Error(error || 'Erreur lors de la sauvegarde.');
 
-      // Créer le lien de paiement
       const payRes = await fetch('/api/paiements/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inscriptionId }),
+        body: JSON.stringify({ inscriptionId, modePaiement: formData.modePaiement }),
       });
       const { checkoutUrl: url, error: payError } = await payRes.json();
       if (!payRes.ok) throw new Error(payError || 'Erreur lors de la création du paiement.');
@@ -78,13 +82,12 @@ export default function FormInscription() {
     }
   };
 
-  const steps = ['Informations', 'Profil', 'Photo'];
+  const steps = ['Informations', 'Profil', 'Options & Photo'];
 
   if (checkoutUrl) return <SuccessPaiement url={checkoutUrl} />;
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Indicateur de progression */}
       <div className="flex items-center justify-between mb-8">
         {steps.map((step, i) => (
           <div key={step} className="flex items-center flex-1">
@@ -115,7 +118,6 @@ export default function FormInscription() {
         ))}
       </div>
 
-      {/* Contenu des étapes */}
       <div className="card-dark rounded-2xl p-6 md:p-8">
         <AnimatePresence mode="wait">
           {etape === 1 && (
@@ -126,11 +128,7 @@ export default function FormInscription() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <Etape1
-                data={formData}
-                update={update}
-                onNext={() => setEtape(2)}
-              />
+              <Etape1 data={formData} update={update} onNext={() => setEtape(2)} />
             </motion.div>
           )}
           {etape === 2 && (
@@ -141,12 +139,7 @@ export default function FormInscription() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <Etape2
-                data={formData}
-                update={update}
-                onNext={() => setEtape(3)}
-                onBack={() => setEtape(1)}
-              />
+              <Etape2 data={formData} update={update} onNext={() => setEtape(3)} onBack={() => setEtape(1)} />
             </motion.div>
           )}
           {etape === 3 && (

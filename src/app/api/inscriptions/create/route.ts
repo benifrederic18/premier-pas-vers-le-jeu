@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getClientIp } from '@/lib/utils';
+import { envoyerEmail, templateNotificationAction } from '@/lib/email';
+import { v2 as cloudinary } from 'cloudinary';
 import sharp from 'sharp';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const requestCounts = new Map<string, { count: number; resetAt: number }>();
 
@@ -17,26 +25,22 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-async function compressImage(buffer: Buffer): Promise<{ base64: string; mimeType: string; size: number }> {
-  let quality = 80;
-  let compressed = await sharp(buffer)
+async function uploadToCloudinary(buffer: Buffer, folder: string): Promise<string> {
+  // Compresser avant upload
+  const compressed = await sharp(buffer)
     .resize(800, 800, { fit: 'cover', position: 'center' })
-    .jpeg({ quality, progressive: true })
+    .jpeg({ quality: 80, progressive: true })
     .toBuffer();
 
-  if (compressed.length > 500000) {
-    quality = 70;
-    compressed = await sharp(buffer)
-      .resize(800, 800, { fit: 'cover' })
-      .jpeg({ quality })
-      .toBuffer();
-  }
-
-  return {
-    base64: compressed.toString('base64'),
-    mimeType: 'image/jpeg',
-    size: compressed.length,
-  };
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      { folder, resource_type: 'image', transformation: [{ quality: 'auto', fetch_format: 'auto' }] },
+      (error, result) => {
+        if (error || !result) reject(error || new Error('Upload failed'));
+        else resolve(result.secure_url);
+      }
+    ).end(compressed);
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -58,14 +62,14 @@ export async function POST(req: NextRequest) {
     const motivation = formData.get('motivation') as string;
     const photoFile = formData.get('photo') as File | null;
     const sourceUtm = (formData.get('utm_source') as string) || req.nextUrl.searchParams.get('utm_source') || null;
+    const modeParticipation = (formData.get('modeParticipation') as string) || 'PRESENTIEL';
+    const modePaiement = (formData.get('modePaiement') as string) || 'COMPLET';
 
     if (!nom || !prenoms || !telephone || !email || !age || motivation === null) {
       return NextResponse.json({ error: 'Données manquantes.' }, { status: 400 });
     }
 
-    let photoBase64: string | null = null;
-    let photoMimeType: string | null = null;
-    let photoSize: number | null = null;
+    let photoUrl: string | null = null;
 
     if (photoFile && photoFile.size > 0) {
       const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
@@ -76,10 +80,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Photo trop volumineuse (max 5MB).' }, { status: 400 });
       }
       const buffer = Buffer.from(await photoFile.arrayBuffer());
-      const compressed = await compressImage(buffer);
-      photoBase64 = compressed.base64;
-      photoMimeType = compressed.mimeType;
-      photoSize = compressed.size;
+      photoUrl = await uploadToCloudinary(buffer, 'ppvlj/participants');
     }
 
     const inscription = await prisma.inscription.create({
@@ -92,16 +93,35 @@ export async function POST(req: NextRequest) {
         dejaForme,
         professionnel,
         motivation,
-        photoBase64,
-        photoMimeType,
-        photoSize,
+        photoUrl,
         statut: 'EN_ATTENTE_PAIEMENT',
+        modeParticipation: modeParticipation as any,
+        modePaiement: modePaiement as any,
         sourceUtm,
         ipAddress: ip,
         userAgent: req.headers.get('user-agent'),
         dateInscription: new Date(),
       },
     });
+
+    const adminEmail = process.env.EMAIL_ADMIN || process.env.GMAIL_USER;
+    if (adminEmail) {
+      envoyerEmail({
+        destinataire: adminEmail,
+        nom: 'Admin',
+        sujet: `📝 Nouvelle inscription — ${nom} ${prenoms}`,
+        htmlContent: templateNotificationAction({
+          typeAction: 'Nouvelle inscription',
+          details: `<p><strong>Nom :</strong> ${nom} ${prenoms}</p>
+<p><strong>Email :</strong> ${email}</p>
+<p><strong>Téléphone :</strong> ${telephone}</p>
+<p><strong>Mode :</strong> ${modeParticipation === 'EN_LIGNE' ? 'En ligne' : 'Présentiel'}</p>
+<p><strong>Paiement :</strong> ${modePaiement === 'TRANCHE' ? 'En 2 tranches' : 'Complet'}</p>`,
+        }),
+        typeEmail: 'NOTIFICATION_ACTION',
+        inscriptionId: inscription.id,
+      }).catch(console.error);
+    }
 
     return NextResponse.json({ inscriptionId: inscription.id }, { status: 201 });
   } catch (error: any) {
