@@ -249,3 +249,23 @@ enum StatutContribution {
   PAYE
   ECHEC
 }
+
+model MembreEquipe {
+  id          String   @id @default(cuid())
+  nom         String
+  role        String
+  bio         String?  @db.Text
+  photoUrl    String?
+  type        TypeMembre @default(EQUIPE)
+  ordre       Int      @default(0)
+  actif       Boolean  @default(true)
+  reseaux     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum TypeMembre {
+  VISIONNAIRE
+  EQUIPE
+  FORMATEUR
+}

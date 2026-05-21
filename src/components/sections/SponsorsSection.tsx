@@ -48,7 +48,7 @@ export default function SponsorsSection() {
     }
   };
 
-  if (sponsors.length === 0 && !showForm) return null;
+  // Toujours afficher même si pas de sponsors (pour le bouton "Devenir sponsor")
 
   return (
     <section className="py-16 px-4 bg-black/50" id="sponsors">

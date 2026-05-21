@@ -1,6 +1,7 @@
 import HeroSection from '@/components/sections/HeroSection';
 import PresentationSection from '@/components/sections/PresentationSection';
 import ProgrammeSection from '@/components/sections/ProgrammeSection';
+import EquipeSection from '@/components/sections/EquipeSection';
 import GalerieSection from '@/components/sections/GalerieSection';
 import InscriptionSection from '@/components/sections/InscriptionSection';
 import SponsorsSection from '@/components/sections/SponsorsSection';
@@ -13,6 +14,7 @@ export default function HomePage() {
       <HeroSection />
       <PresentationSection />
       <ProgrammeSection />
+      <EquipeSection />
       <GalerieSection />
       <InscriptionSection />
       <SponsorsSection />
