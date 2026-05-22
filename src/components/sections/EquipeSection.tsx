@@ -11,6 +11,7 @@ interface Membre {
   photoUrl: string | null;
   type: 'VISIONNAIRE' | 'EQUIPE' | 'FORMATEUR';
   ordre: number;
+  actif: boolean;
   reseaux: any;
 }
 

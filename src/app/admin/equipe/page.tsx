@@ -22,7 +22,7 @@ const emptyForm = {
   type: 'EQUIPE' as 'VISIONNAIRE' | 'EQUIPE' | 'FORMATEUR',
   ordre: 0,
   actif: true,
-  reseaux: { instagram: '', facebook: '', linkedin: '' },
+  reseaux: { instagram: '', facebook: '', linkedin: '' } as Record<string, string>,
 };
 
 const typeLabels = {
