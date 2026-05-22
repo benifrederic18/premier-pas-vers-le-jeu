@@ -14,15 +14,26 @@ interface Membre {
   reseaux: any;
 }
 
-const emptyForm = {
+type FormState = {
+  nom: string;
+  role: string;
+  bio: string;
+  photoUrl: string;
+  type: 'VISIONNAIRE' | 'EQUIPE' | 'FORMATEUR';
+  ordre: number;
+  actif: boolean;
+  reseaux: Record<string, string>;
+};
+
+const emptyForm: FormState = {
   nom: '',
   role: '',
   bio: '',
   photoUrl: '',
-  type: 'EQUIPE' as 'VISIONNAIRE' | 'EQUIPE' | 'FORMATEUR',
+  type: 'EQUIPE',
   ordre: 0,
   actif: true,
-  reseaux: { instagram: '', facebook: '', linkedin: '' } as Record<string, string>,
+  reseaux: { instagram: '', facebook: '', linkedin: '' },
 };
 
 const typeLabels = {
