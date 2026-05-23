@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { FormDataState } from './FormInscription';
 
 interface Props {
@@ -9,13 +9,27 @@ interface Props {
   onSubmit: () => void;
   onBack: () => void;
   loading: boolean;
+  prefilledCode?: string;
+  onCodeSuccess: () => void;
 }
 
-export default function Etape3({ data, update, onSubmit, onBack, loading }: Props) {
+export default function Etape3({ data, update, onSubmit, onBack, loading, prefilledCode, onCodeSuccess }: Props) {
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [consentement, setConsentement] = useState(data.consentement);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const [showDejaPayeSection, setShowDejaPayeSection] = useState(!!prefilledCode);
+  const [dejaPayeCode, setDejaPayeCode] = useState(prefilledCode || '');
+  const [dejaPayeError, setDejaPayeError] = useState<string | null>(null);
+  const [dejaPayeLoading, setDejaPayeLoading] = useState(false);
+
+  useEffect(() => {
+    if (prefilledCode) {
+      setDejaPayeCode(prefilledCode);
+      setShowDejaPayeSection(true);
+    }
+  }, [prefilledCode]);
 
   const handleFile = (file: File) => {
     setError(null);
@@ -52,6 +66,41 @@ export default function Etape3({ data, update, onSubmit, onBack, loading }: Prop
     }
     update({ consentement });
     onSubmit();
+  };
+
+  const handleDejaPayeValidate = async () => {
+    if (!consentement) {
+      setError('Vous devez accepter la politique de confidentialité pour continuer.');
+      return;
+    }
+    if (!dejaPayeCode.trim()) return;
+    setDejaPayeError(null);
+    setDejaPayeLoading(true);
+    try {
+      const res = await fetch('/api/codes-paiement/utiliser', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: dejaPayeCode.trim().toUpperCase(),
+          nom: data.nom,
+          prenoms: data.prenoms,
+          telephone: data.telephone,
+          email: data.email,
+          age: data.age,
+          dejaForme: data.dejaForme,
+          professionnel: data.professionnel,
+          motivation: data.motivation || 'Paiement validé via code.',
+          modeParticipation: data.modeParticipation,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Code invalide.');
+      onCodeSuccess();
+    } catch (err: any) {
+      setDejaPayeError(err.message);
+    } finally {
+      setDejaPayeLoading(false);
+    }
   };
 
   const montantAffiche =
@@ -233,6 +282,53 @@ export default function Etape3({ data, update, onSubmit, onBack, loading }: Prop
         </span>
       </label>
 
+      {/* Section déjà payé — accordéon */}
+      <div className="border border-white/10 rounded-xl overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowDejaPayeSection(!showDejaPayeSection)}
+          className="w-full flex items-center justify-between p-4 text-left hover:bg-white/5 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-xl">🔑</span>
+            <div>
+              <p className="text-white font-semibold text-sm">Vous avez déjà payé ?</p>
+              <p className="text-gray-500 text-xs">Entrez votre code pour valider sans repayer</p>
+            </div>
+          </div>
+          <span className="text-gray-500 text-xs">{showDejaPayeSection ? '▲' : '▼'}</span>
+        </button>
+
+        {showDejaPayeSection && (
+          <div className="px-4 pb-4 border-t border-white/5 pt-4 space-y-3">
+            <input
+              type="text"
+              value={dejaPayeCode}
+              onChange={(e) => setDejaPayeCode(e.target.value.toUpperCase())}
+              placeholder="Ex : A3F9B2C1"
+              maxLength={8}
+              className="w-full bg-white/5 border border-white/10 text-white font-mono text-center text-lg rounded-xl px-4 py-3 tracking-widest focus:outline-none focus:border-orange-500"
+            />
+            {dejaPayeError && (
+              <p className="text-red-400 text-xs text-center">{dejaPayeError}</p>
+            )}
+            <button
+              type="button"
+              onClick={handleDejaPayeValidate}
+              disabled={dejaPayeLoading || !dejaPayeCode.trim()}
+              className="w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm"
+            >
+              {dejaPayeLoading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Validation en cours...</span>
+                </>
+              ) : '✅ Valider mon inscription avec ce code'}
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-3">
         <button
           type="button"
@@ -246,7 +342,7 @@ export default function Etape3({ data, update, onSubmit, onBack, loading }: Prop
           type="button"
           onClick={handleSubmit}
           disabled={loading}
-          className="flex-[2] bg-orange-500 hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+          className="flex-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           {loading ? (
             <>

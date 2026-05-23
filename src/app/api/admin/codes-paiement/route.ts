@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { randomBytes } from 'crypto';
+import { sendCodeInvitation } from '@/lib/email';
 
 function generateCode(): string {
   return randomBytes(4).toString('hex').toUpperCase(); // ex: A3F9B2C1
@@ -46,6 +47,21 @@ export async function POST(req: NextRequest) {
       createdBy: (session.user as any).email || 'admin',
     },
   });
+
+  // Send invitation email to learner with pre-filled link
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const lienInscription = `${baseUrl}/?code=${code}#inscription`;
+  const [prenoms, ...restNom] = nomApprenant.split(' ');
+  try {
+    await sendCodeInvitation({
+      prenoms: prenoms || nomApprenant,
+      nom: restNom.join(' ') || nomApprenant,
+      email,
+      montant: parseFloat(montant),
+      code,
+      lienInscription,
+    });
+  } catch {}
 
   return NextResponse.json(cp, { status: 201 });
 }

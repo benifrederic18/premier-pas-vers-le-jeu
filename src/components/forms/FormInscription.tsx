@@ -7,7 +7,6 @@ import Etape2 from './Etape2';
 import Etape3 from './Etape3';
 import SuccessPaiement from './SuccessPaiement';
 import MomoPopup from './MomoPopup';
-import DejaPayeModal from './DejaPayeModal';
 
 export type FormDataState = {
   nom: string;
@@ -57,13 +56,18 @@ export default function FormInscription() {
   const [showMomo, setShowMomo] = useState(false);
   const [montantMomo, setMontantMomo] = useState<number>(30000);
 
-  const [showDejaPayeModal, setShowDejaPayeModal] = useState(false);
+  const [prefilledCode, setPrefilledCode] = useState('');
 
   useEffect(() => {
     fetch('/api/parametres-publics')
       .then((r) => r.json())
       .then((d) => { if (d?.momoActif) setMomoInfo(d); })
       .catch(() => {});
+
+    // Read code from URL params (e.g. /?code=A3F9B2C1#inscription)
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) setPrefilledCode(code.toUpperCase());
   }, []);
 
   const update = (data: Partial<FormDataState>) => setFormData((prev) => ({ ...prev, ...data }));
@@ -148,20 +152,16 @@ export default function FormInscription() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Déjà payé banner */}
-      <div className="mb-6 p-4 rounded-2xl border border-orange-500/30 bg-orange-500/5 flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center text-xl shrink-0">🔑</div>
-        <div className="flex-1 min-w-0">
-          <p className="text-white font-semibold text-sm">Vous avez déjà payé ?</p>
-          <p className="text-gray-400 text-xs mt-0.5">Utilisez le code fourni par l'administrateur pour valider votre inscription directement.</p>
+      {/* Banner discret si code détecté dans l'URL */}
+      {prefilledCode && (
+        <div className="mb-6 p-3 rounded-xl border border-green-500/30 bg-green-500/5 flex items-center gap-3">
+          <span className="text-green-400 text-lg">✅</span>
+          <div>
+            <p className="text-green-300 font-semibold text-sm">Code de paiement détecté</p>
+            <p className="text-gray-400 text-xs mt-0.5">Complétez votre profil (étapes 1 et 2), puis validez avec votre code à l'étape 3.</p>
+          </div>
         </div>
-        <button
-          onClick={() => setShowDejaPayeModal(true)}
-          className="shrink-0 bg-orange-500 hover:bg-orange-400 text-white font-bold px-4 py-2 rounded-xl text-sm transition-colors whitespace-nowrap"
-        >
-          Entrer mon code
-        </button>
-      </div>
+      )}
 
       <div className="flex items-center justify-between mb-8">
         {steps.map((step, i) => (
@@ -207,7 +207,15 @@ export default function FormInscription() {
           )}
           {etape === 3 && (
             <motion.div key="etape3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-              <Etape3 data={formData} update={update} onSubmit={handleSubmitFinal} onBack={() => setEtape(2)} loading={loading} />
+              <Etape3
+                data={formData}
+                update={update}
+                onSubmit={handleSubmitFinal}
+                onBack={() => setEtape(2)}
+                loading={loading}
+                prefilledCode={prefilledCode}
+                onCodeSuccess={() => setInscriptionSuccess(true)}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -229,20 +237,6 @@ export default function FormInscription() {
         />
       )}
 
-      {/* Déjà payé modal */}
-      <DejaPayeModal
-        open={showDejaPayeModal}
-        onClose={() => setShowDejaPayeModal(false)}
-        onSuccess={() => { setShowDejaPayeModal(false); setInscriptionSuccess(true); }}
-        prefillData={{
-          nom: formData.nom,
-          prenoms: formData.prenoms,
-          telephone: formData.telephone,
-          email: formData.email,
-          age: formData.age,
-          modeParticipation: formData.modeParticipation,
-        }}
-      />
     </div>
   );
 }

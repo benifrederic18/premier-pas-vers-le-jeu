@@ -187,6 +187,42 @@ export async function sendMomoInstructions(data: {
   });
 }
 
+export async function sendCodeInvitation(data: {
+  prenoms: string; nom: string; email: string; montant: number;
+  code: string; lienInscription: string;
+}) {
+  const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Premier Pas Vers Le Jeu';
+  await sendWithTemplate({
+    cle: 'INVITATION_CODE',
+    typeEmail: 'PAIEMENT_CODE',
+    destinataire: data.email,
+    vars: { prenoms: data.prenoms, nom: data.nom, email: data.email, montant: data.montant, lienInscription: data.lienInscription, code: data.code },
+    fallbackSujet: `Finalisez votre inscription — ${siteName}`,
+    fallbackHtml: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:0;background:#f4f4f4;">
+        <div style="background:linear-gradient(135deg,#f97316,#ea580c);padding:32px;text-align:center;border-radius:12px 12px 0 0;">
+          <h1 style="color:white;margin:0;font-size:22px;">🎭 ${siteName}</h1>
+        </div>
+        <div style="background:white;padding:32px;border-radius:0 0 12px 12px;">
+          <h2 style="color:#f97316;margin-top:0;">Votre paiement a été confirmé !</h2>
+          <p>Bonjour <strong>${data.prenoms}</strong>,</p>
+          <p>Votre paiement de <strong>${data.montant.toLocaleString('fr-FR')} FCFA</strong> a bien été reçu et enregistré.</p>
+          <p>Il ne vous reste plus qu'à <strong>compléter votre profil</strong> pour finaliser votre inscription :</p>
+          <div style="text-align:center;margin:32px 0;">
+            <a href="${data.lienInscription}" style="background:#f97316;color:white;padding:16px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;display:inline-block;">
+              ✅ Finaliser mon inscription
+            </a>
+          </div>
+          <p style="background:#f9f9f9;border-left:4px solid #f97316;padding:12px 16px;border-radius:0 8px 8px 0;font-size:13px;">
+            Votre code de validation : <strong style="font-family:monospace;font-size:16px;letter-spacing:2px;">${data.code}</strong><br>
+            <span style="color:#888;">Entrez-le à l'étape 3 du formulaire si le lien ne fonctionne pas.</span>
+          </p>
+          <p style="color:#888;font-size:12px;margin-top:24px;">Pour toute question : ${process.env.GMAIL_USER}</p>
+        </div>
+      </div>`,
+  });
+}
+
 export async function sendCodePaiementConfirmation(data: {
   prenoms: string; nom: string; email: string; montant: number;
   code: string; lienWhatsapp?: string | null; inscriptionId?: string;
