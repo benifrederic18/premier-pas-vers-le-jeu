@@ -148,13 +148,18 @@ export default function FormInscription() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Déjà payé link */}
-      <div className="text-center mb-4">
+      {/* Déjà payé banner */}
+      <div className="mb-6 p-4 rounded-2xl border border-orange-500/30 bg-orange-500/5 flex items-center gap-4">
+        <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center text-xl shrink-0">🔑</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-semibold text-sm">Vous avez déjà payé ?</p>
+          <p className="text-gray-400 text-xs mt-0.5">Utilisez le code fourni par l'administrateur pour valider votre inscription directement.</p>
+        </div>
         <button
           onClick={() => setShowDejaPayeModal(true)}
-          className="text-sm text-gray-500 hover:text-orange-400 transition-colors underline underline-offset-2"
+          className="shrink-0 bg-orange-500 hover:bg-orange-400 text-white font-bold px-4 py-2 rounded-xl text-sm transition-colors whitespace-nowrap"
         >
-          🔑 J'ai déjà payé — valider mon inscription avec un code
+          Entrer mon code
         </button>
       </div>
 

@@ -89,6 +89,19 @@ export default function SoutiensPage() {
         </button>
       </div>
 
+      {/* Explication du système */}
+      <div className="mb-6 p-4 rounded-2xl border border-blue-500/20 bg-blue-500/5 space-y-2">
+        <p className="text-blue-300 font-semibold text-sm">Comment fonctionnent les Soutiens & Votes ?</p>
+        <ul className="text-gray-400 text-xs space-y-1 list-none">
+          <li>🎭 <strong className="text-gray-300">Campagne</strong> — Chaque participant inscrit peut avoir sa propre page de soutien publique accessible via <code className="bg-white/10 px-1 rounded">/soutenir/[slug]</code>.</li>
+          <li>💰 <strong className="text-gray-300">Contributions financières</strong> — Les visiteurs peuvent faire un don (paiement FedaPay) sur la page du participant. Le montant s'accumule dans <em>totalCollecte</em>.</li>
+          <li>⭐ <strong className="text-gray-300">Votes</strong> — Les visiteurs peuvent aussi simplement voter (sans payer) pour encourager un participant. Chaque vote incrémente <em>totalVotes</em>.</li>
+          <li>📋 <strong className="text-gray-300">Créer une campagne</strong> — Sélectionnez un participant payé, donnez un titre, une description et un objectif financier optionnel, puis cliquez sur <em>Créer</em>.</li>
+          <li>🔗 <strong className="text-gray-300">Partager</strong> — Copiez le lien et partagez-le sur les réseaux sociaux pour que le public puisse soutenir le participant.</li>
+          <li>⏸ <strong className="text-gray-300">Activer / Désactiver</strong> — Une campagne désactivée n'est plus visible sur le site public mais ses données sont conservées.</li>
+        </ul>
+      </div>
+
       {/* Stats globales */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
