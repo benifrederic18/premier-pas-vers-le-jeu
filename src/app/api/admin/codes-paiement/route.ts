@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { randomBytes } from 'crypto';
-import { sendCodeInvitation } from '@/lib/email';
+import { sendCodeInvitation, sendCodePaiementConfirmation, envoyerEmail } from '@/lib/email';
 
 function generateCode(): string {
-  return randomBytes(4).toString('hex').toUpperCase(); // ex: A3F9B2C1
+  return randomBytes(4).toString('hex').toUpperCase();
 }
 
 export async function GET(req: NextRequest) {
@@ -29,6 +29,75 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Email, nom et montant requis.' }, { status: 400 });
   }
 
+  const montantNum = parseFloat(montant);
+
+  // ── Cas 1 : inscription existante (paiement échoué ou en attente) ──────────
+  const existingInscription = await prisma.inscription.findFirst({
+    where: {
+      email: email.toLowerCase().trim(),
+      statut: { in: ['EN_ATTENTE_PAIEMENT', 'ECHEC_PAIEMENT'] },
+    },
+    orderBy: { dateInscription: 'desc' },
+  });
+
+  if (existingInscription) {
+    const ref = `DIRECT-ADMIN-${Date.now()}`;
+    const updated = await prisma.inscription.update({
+      where: { id: existingInscription.id },
+      data: {
+        statut: 'PAYE',
+        montantPaye: montantNum,
+        datePaiement: new Date(),
+        emailConfirmationEnvoye: true,
+        transactionId: ref,
+        modePaiement: 'COMPLET',
+      },
+    });
+
+    const params = await prisma.parametresSite.findFirst();
+    const adminEmail = process.env.EMAIL_ADMIN || process.env.GMAIL_USER;
+
+    await Promise.allSettled([
+      sendCodePaiementConfirmation({
+        prenoms: updated.prenoms,
+        nom: updated.nom,
+        email: updated.email,
+        montant: montantNum,
+        code: ref,
+        lienWhatsapp: params?.lienWhatsapp ?? null,
+        inscriptionId: updated.id,
+      }),
+      adminEmail
+        ? envoyerEmail({
+            destinataire: adminEmail,
+            nom: 'Admin',
+            sujet: `✅ Paiement direct validé — ${updated.prenoms} ${updated.nom}`,
+            htmlContent: `
+              <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+                <h2>✅ Inscription validée directement par l'admin</h2>
+                <p><strong>Apprenant :</strong> ${updated.prenoms} ${updated.nom}</p>
+                <p><strong>Email :</strong> ${updated.email}</p>
+                <p><strong>Téléphone :</strong> ${updated.telephone}</p>
+                <p><strong>Montant :</strong> ${montantNum.toLocaleString('fr-FR')} FCFA</p>
+                <p><strong>Validé par :</strong> ${(session.user as any).email || 'admin'}</p>
+                <p><strong>Référence :</strong> ${ref}</p>
+              </div>`,
+            typeEmail: 'NOTIFICATION_ADMIN',
+            inscriptionId: updated.id,
+          })
+        : Promise.resolve(),
+    ]);
+
+    return NextResponse.json({
+      type: 'DIRECT_VALIDATION',
+      inscriptionId: updated.id,
+      prenoms: updated.prenoms,
+      nom: updated.nom,
+      email: updated.email,
+    });
+  }
+
+  // ── Cas 2 : aucune inscription existante → générer un code ─────────────────
   let code = generateCode();
   let attempts = 0;
   while (attempts < 10) {
@@ -43,12 +112,11 @@ export async function POST(req: NextRequest) {
       code,
       email,
       nomApprenant,
-      montant: parseFloat(montant),
+      montant: montantNum,
       createdBy: (session.user as any).email || 'admin',
     },
   });
 
-  // Send invitation email to learner with pre-filled link
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const lienInscription = `${baseUrl}/?code=${code}#inscription`;
   const [prenoms, ...restNom] = nomApprenant.split(' ');
@@ -57,11 +125,11 @@ export async function POST(req: NextRequest) {
       prenoms: prenoms || nomApprenant,
       nom: restNom.join(' ') || nomApprenant,
       email,
-      montant: parseFloat(montant),
+      montant: montantNum,
       code,
       lienInscription,
     });
   } catch {}
 
-  return NextResponse.json(cp, { status: 201 });
+  return NextResponse.json({ type: 'CODE_GENERATED', ...cp }, { status: 201 });
 }

@@ -22,6 +22,7 @@ export default function CodesPaiementPage() {
   const [form, setForm] = useState({ email: '', nomApprenant: '', montant: '' });
   const [saving, setSaving] = useState(false);
   const [newCode, setNewCode] = useState<string | null>(null);
+  const [directValidation, setDirectValidation] = useState<{ prenoms: string; nom: string; email: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const load = () =>
@@ -43,7 +44,11 @@ export default function CodesPaiementPage() {
     const data = await res.json();
     setSaving(false);
     if (res.ok) {
-      setNewCode(data.code);
+      if (data.type === 'DIRECT_VALIDATION') {
+        setDirectValidation({ prenoms: data.prenoms, nom: data.nom, email: data.email });
+      } else {
+        setNewCode(data.code);
+      }
       load();
     }
   };
@@ -64,7 +69,7 @@ export default function CodesPaiementPage() {
           <p className="text-gray-500 text-sm mt-1">Pour les apprenants qui ont payé directement</p>
         </div>
         <button
-          onClick={() => { setShowModal(true); setNewCode(null); setForm({ email: '', nomApprenant: '', montant: '' }); }}
+          onClick={() => { setShowModal(true); setNewCode(null); setDirectValidation(null); setForm({ email: '', nomApprenant: '', montant: '' }); }}
           className="bg-orange-500 hover:bg-orange-400 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-2"
         >
           <span>+</span> Générer un code
@@ -75,10 +80,9 @@ export default function CodesPaiementPage() {
       <div className="card-dark rounded-2xl p-4 mb-6 border border-blue-500/20 text-blue-300 text-sm">
         <p className="font-semibold mb-1">💡 Comment ça marche ?</p>
         <ol className="text-gray-400 space-y-1 text-xs list-decimal list-inside">
-          <li>Vous générez un code unique pour un apprenant qui a payé directement (cash / MoMo).</li>
-          <li>Vous lui communiquez ce code (SMS, WhatsApp, etc.).</li>
-          <li>Sur le site, il clique <strong>"Déjà payé"</strong>, entre le code et complète son profil.</li>
-          <li>Son inscription est automatiquement validée et les emails de confirmation sont envoyés.</li>
+          <li><strong className="text-white">Si l'apprenant a déjà rempli le formulaire</strong> (paiement bloqué) → l'inscription est validée directement, l'email de confirmation est envoyé automatiquement. Rien à faire pour lui.</li>
+          <li><strong className="text-white">Si l'apprenant n'a pas encore rempli le formulaire</strong> → un code est généré et un email avec un lien lui est envoyé. Il clique, complète son profil en 3 étapes et valide avec son code.</li>
+          <li>Le système détecte automatiquement lequel des deux cas s'applique selon l'email.</li>
         </ol>
       </div>
 
@@ -148,13 +152,31 @@ export default function CodesPaiementPage() {
           <div className="bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-md">
             <h2 className="text-white font-bold text-lg mb-5">Générer un code de paiement</h2>
 
-            {newCode ? (
+            {directValidation ? (
               <div className="text-center">
-                <p className="text-gray-400 text-sm mb-4">Code généré avec succès !</p>
+                <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">✅</div>
+                <p className="text-green-400 font-bold text-lg mb-1">Inscription validée directement !</p>
+                <p className="text-gray-400 text-sm mb-4">
+                  <strong className="text-white">{directValidation.prenoms} {directValidation.nom}</strong> avait déjà rempli le formulaire.<br />
+                  Son inscription est maintenant confirmée (statut PAYÉ) et l'email de confirmation lui a été envoyé.
+                </p>
+                <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 text-green-300 text-xs mb-4">
+                  📧 Email envoyé à : <strong>{directValidation.email}</strong>
+                </div>
+                <button
+                  onClick={() => { setShowModal(false); setDirectValidation(null); }}
+                  className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-xl text-sm"
+                >
+                  Fermer
+                </button>
+              </div>
+            ) : newCode ? (
+              <div className="text-center">
+                <p className="text-gray-400 text-sm mb-4">Code généré — email d'invitation envoyé à l'apprenant.</p>
                 <div className="bg-orange-500/10 border-2 border-orange-500 rounded-2xl p-6 mb-4">
                   <p className="text-orange-400 font-black text-4xl tracking-widest font-mono">{newCode}</p>
                 </div>
-                <p className="text-gray-500 text-xs mb-4">Communiquez ce code à l'apprenant pour qu'il complète son inscription sur le site.</p>
+                <p className="text-gray-500 text-xs mb-4">L'apprenant a reçu un email avec un lien. Il peut aussi entrer ce code manuellement à l'étape 3 du formulaire.</p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => copy(newCode)}
@@ -210,7 +232,7 @@ export default function CodesPaiementPage() {
                     disabled={saving || !form.email || !form.nomApprenant || !form.montant}
                     className="flex-[2] bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-sm"
                   >
-                    {saving ? 'Génération...' : '🔑 Générer le code'}
+                    {saving ? 'Traitement...' : '✅ Valider / Générer le code'}
                   </button>
                 </div>
               </div>
