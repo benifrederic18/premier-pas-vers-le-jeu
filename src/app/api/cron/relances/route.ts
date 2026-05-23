@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { envoyerEmail, templateRelance, templateRelanceTranche2 } from '@/lib/email';
+import { sendRelancePaiement, sendRelanceTranche2 } from '@/lib/email';
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
@@ -54,12 +54,11 @@ export async function GET(req: NextRequest) {
         lienPaiement = data.checkoutUrl || lienPaiement;
       }
 
-      await envoyerEmail({
-        destinataire: inscription.email,
-        nom: `${inscription.prenoms} ${inscription.nom}`,
-        sujet: '⏰ Finalisez votre inscription — Places limitées',
-        htmlContent: templateRelance({ prenoms: inscription.prenoms, lienPaiement }),
-        typeEmail: 'RELANCE_PAIEMENT',
+      await sendRelancePaiement({
+        prenoms: inscription.prenoms,
+        nom: inscription.nom,
+        email: inscription.email,
+        lienPaiement,
         inscriptionId: inscription.id,
       });
 
@@ -96,12 +95,11 @@ export async function GET(req: NextRequest) {
         lienPaiement = data.checkoutUrl || lienPaiement;
       }
 
-      await envoyerEmail({
-        destinataire: inscription.email,
-        nom: `${inscription.prenoms} ${inscription.nom}`,
-        sujet: '💳 Rappel : 2ème tranche de paiement — Premier Pas Vers Le Jeu',
-        htmlContent: templateRelanceTranche2({ prenoms: inscription.prenoms, lienPaiement }),
-        typeEmail: 'RELANCE_TRANCHE2',
+      await sendRelanceTranche2({
+        prenoms: inscription.prenoms,
+        nom: inscription.nom,
+        email: inscription.email,
+        lienPaiement,
         inscriptionId: inscription.id,
       });
 

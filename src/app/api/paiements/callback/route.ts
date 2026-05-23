@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import {
+  sendConfirmationInscription,
+  sendTranche1Confirmee,
   envoyerEmail,
-  templateConfirmationParticipant,
   templateNotificationAdmin,
-  templateTranche1Confirmee,
 } from '@/lib/email';
 import crypto from 'crypto';
 
@@ -44,26 +44,15 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      if (!inscription) {
-        return new NextResponse('Inscription introuvable', { status: 404 });
-      }
-
-      if (inscription.statut === 'PAYE') {
-        return new NextResponse('OK', { status: 200 });
-      }
+      if (!inscription) return new NextResponse('Inscription introuvable', { status: 404 });
+      if (inscription.statut === 'PAYE') return new NextResponse('OK', { status: 200 });
 
       const params = await prisma.parametresSite.findFirst();
       const adminEmail = process.env.EMAIL_ADMIN || process.env.GMAIL_USER;
-
-      // Paiement complet ou 2ème tranche
-      const isDeuxiemeTranche =
-        inscription.statut === 'TRANCHE1_PAYEE' &&
-        fedapayTransactionId === inscription.fedapayTranche2Id;
-
       const isPremierePaiement = !inscription.tranche1Payee;
 
       if (inscription.modePaiement === 'TRANCHE' && isPremierePaiement) {
-        // 1ère tranche
+        // ── 1ère tranche ──────────────────────────────────────────────────────
         const updated = await prisma.inscription.update({
           where: { id: inscription.id },
           data: {
@@ -76,23 +65,16 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Email confirmation tranche 1
         await Promise.allSettled([
-          envoyerEmail({
-            destinataire: updated.email,
-            nom: `${updated.prenoms} ${updated.nom}`,
-            sujet: '✅ 1ère tranche reçue — Premier Pas Vers Le Jeu',
-            htmlContent: templateTranche1Confirmee({
-              prenoms: updated.prenoms,
-              nom: updated.nom,
-              email: updated.email,
-              telephone: updated.telephone,
-              transactionId: updated.tranche1TransactionId!,
-              datePaiement: updated.dateTranche1!,
-              modeParticipation: updated.modeParticipation,
-              delaiJours: params?.delaiRelanceTranche2Jours ?? 7,
-            }),
-            typeEmail: 'CONFIRMATION_PAIEMENT',
+          sendTranche1Confirmee({
+            prenoms: updated.prenoms,
+            nom: updated.nom,
+            email: updated.email,
+            telephone: updated.telephone,
+            transactionId: updated.tranche1TransactionId!,
+            datePaiement: updated.dateTranche1!,
+            modeParticipation: updated.modeParticipation,
+            delaiJours: params?.delaiRelanceTranche2Jours ?? 7,
             inscriptionId: updated.id,
           }),
           adminEmail
@@ -101,18 +83,11 @@ export async function POST(req: NextRequest) {
                 nom: 'Admin',
                 sujet: `💳 Tranche 1 reçue — ${updated.nom} ${updated.prenoms}`,
                 htmlContent: templateNotificationAdmin({
-                  nom: updated.nom,
-                  prenoms: updated.prenoms,
-                  email: updated.email,
-                  telephone: updated.telephone,
-                  age: updated.age,
-                  professionnel: updated.professionnel,
-                  dejaForme: updated.dejaForme,
-                  transactionId: updated.tranche1TransactionId!,
-                  datePaiement: updated.dateTranche1!,
-                  id: updated.id,
-                  modePaiement: 'TRANCHE',
-                  modeParticipation: updated.modeParticipation,
+                  nom: updated.nom, prenoms: updated.prenoms, email: updated.email,
+                  telephone: updated.telephone, age: updated.age, professionnel: updated.professionnel,
+                  dejaForme: updated.dejaForme, transactionId: updated.tranche1TransactionId!,
+                  datePaiement: updated.dateTranche1!, id: updated.id,
+                  modePaiement: 'TRANCHE', modeParticipation: updated.modeParticipation,
                   typeNotif: '1ère tranche de paiement reçue',
                 }),
                 typeEmail: 'NOTIFICATION_ADMIN',
@@ -121,11 +96,9 @@ export async function POST(req: NextRequest) {
             : Promise.resolve(),
         ]);
       } else {
-        // Paiement complet OU 2ème tranche
+        // ── Paiement complet OU 2ème tranche ─────────────────────────────────
         const isSecondTranche = inscription.modePaiement === 'TRANCHE' && inscription.tranche1Payee;
-        const totalPaye = isSecondTranche
-          ? (inscription.montantPaye || 0) + montantRecu
-          : montantRecu;
+        const totalPaye = isSecondTranche ? (inscription.montantPaye || 0) + montantRecu : montantRecu;
 
         const updated = await prisma.inscription.update({
           where: { id: inscription.id },
@@ -146,27 +119,21 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Envoyer lien WhatsApp si disponible
         const lienWhatsapp = params?.lienWhatsapp || null;
 
         await Promise.allSettled([
-          envoyerEmail({
-            destinataire: updated.email,
-            nom: `${updated.prenoms} ${updated.nom}`,
-            sujet: '🎬 Inscription confirmée — Premier Pas Vers Le Jeu',
-            htmlContent: templateConfirmationParticipant({
-              prenoms: updated.prenoms,
-              nom: updated.nom,
-              email: updated.email,
-              telephone: updated.telephone,
-              transactionId: updated.transactionId!,
-              datePaiement: updated.datePaiement!,
-              modePaiement: updated.modePaiement,
-              modeParticipation: updated.modeParticipation,
-              lienWhatsapp,
-            }),
-            typeEmail: 'CONFIRMATION_PAIEMENT',
+          sendConfirmationInscription({
+            prenoms: updated.prenoms,
+            nom: updated.nom,
+            email: updated.email,
+            telephone: updated.telephone,
+            transactionId: updated.transactionId!,
+            datePaiement: updated.datePaiement!,
+            modePaiement: updated.modePaiement,
+            modeParticipation: updated.modeParticipation,
+            lienWhatsapp,
             inscriptionId: updated.id,
+            montant: totalPaye,
           }),
           adminEmail
             ? envoyerEmail({
@@ -174,18 +141,11 @@ export async function POST(req: NextRequest) {
                 nom: 'Admin',
                 sujet: `🔔 Inscription payée — ${updated.nom} ${updated.prenoms}`,
                 htmlContent: templateNotificationAdmin({
-                  nom: updated.nom,
-                  prenoms: updated.prenoms,
-                  email: updated.email,
-                  telephone: updated.telephone,
-                  age: updated.age,
-                  professionnel: updated.professionnel,
-                  dejaForme: updated.dejaForme,
-                  transactionId: updated.transactionId!,
-                  datePaiement: updated.datePaiement!,
-                  id: updated.id,
-                  modePaiement: updated.modePaiement,
-                  modeParticipation: updated.modeParticipation,
+                  nom: updated.nom, prenoms: updated.prenoms, email: updated.email,
+                  telephone: updated.telephone, age: updated.age, professionnel: updated.professionnel,
+                  dejaForme: updated.dejaForme, transactionId: updated.transactionId!,
+                  datePaiement: updated.datePaiement!, id: updated.id,
+                  modePaiement: updated.modePaiement, modeParticipation: updated.modeParticipation,
                 }),
                 typeEmail: 'NOTIFICATION_ADMIN',
                 inscriptionId: updated.id,
@@ -193,7 +153,6 @@ export async function POST(req: NextRequest) {
             : Promise.resolve(),
         ]);
 
-        // Marquer lien WhatsApp envoyé
         if (lienWhatsapp) {
           await prisma.inscription.update({
             where: { id: updated.id },
