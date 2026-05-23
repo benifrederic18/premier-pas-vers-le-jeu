@@ -7,11 +7,18 @@ export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) return new NextResponse('Non autorisé', { status: 401 });
 
-  const admins = await prisma.admin.findMany({
-    orderBy: { createdAt: 'asc' },
-    select: { id: true, email: true, nom: true, role: true, droits: true, actif: true, createdAt: true },
-  });
-  return NextResponse.json(admins);
+  const [admins, currentAdmin] = await Promise.all([
+    prisma.admin.findMany({
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, email: true, nom: true, role: true, droits: true, actif: true, createdAt: true },
+    }),
+    prisma.admin.findUnique({
+      where: { email: (session.user as any).email },
+      select: { role: true },
+    }),
+  ]);
+
+  return NextResponse.json({ admins, currentRole: currentAdmin?.role ?? 'ADMIN' });
 }
 
 export async function POST(req: NextRequest) {

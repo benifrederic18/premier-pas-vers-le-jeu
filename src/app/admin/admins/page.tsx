@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 
 interface AdminUser {
   id: string;
@@ -33,8 +32,8 @@ const emptyForm = {
 };
 
 export default function AdminsPage() {
-  const { data: session } = useSession();
   const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [currentRole, setCurrentRole] = useState<string>('ADMIN');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);
@@ -42,7 +41,7 @@ export default function AdminsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const isSuperAdmin = (session?.user as any)?.role === 'SUPER_ADMIN';
+  const isSuperAdmin = currentRole === 'SUPER_ADMIN';
   const [bootstrapping, setBootstrapping] = useState(false);
 
   const handleBootstrap = async () => {
@@ -61,7 +60,10 @@ export default function AdminsPage() {
   const load = () =>
     fetch('/api/admin/admins')
       .then((r) => r.json())
-      .then(setAdmins)
+      .then((d) => {
+        setAdmins(d.admins ?? []);
+        if (d.currentRole) setCurrentRole(d.currentRole);
+      })
       .finally(() => setLoading(false));
 
   useEffect(() => { load(); }, []);
