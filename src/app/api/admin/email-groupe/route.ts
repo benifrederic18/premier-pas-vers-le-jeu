@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
   let where: any = {};
   if (destinataires === 'PAYES') where.statut = 'PAYE';
   if (destinataires === 'NON_PAYES') where.statut = 'EN_ATTENTE_PAIEMENT';
+  if (destinataires === 'TRANCHE1') where.statut = 'TRANCHE1_PAYEE';
 
   const inscrits = await prisma.inscription.findMany({
     where,

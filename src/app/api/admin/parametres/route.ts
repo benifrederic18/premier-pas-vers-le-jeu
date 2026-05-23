@@ -33,6 +33,10 @@ export async function PUT(req: NextRequest) {
     youtubeUrl: body.youtubeUrl || null,
     tiktokUrl: body.tiktokUrl || null,
     emailGmail: body.emailGmail || null,
+    momoNumero: body.momoNumero || null,
+    momoNom: body.momoNom || null,
+    momoWhatsapp: body.momoWhatsapp || null,
+    momoActif: Boolean(body.momoActif),
   };
 
   const params = existing

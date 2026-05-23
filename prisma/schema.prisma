@@ -122,6 +122,8 @@ enum TypeEmail {
   LIEN_WHATSAPP
   NOTIFICATION_SPONSOR
   NOTIFICATION_ACTION
+  PAIEMENT_CODE
+  MOMO_INSTRUCTIONS
 }
 
 enum StatutEmail {
@@ -151,7 +153,39 @@ model ParametresSite {
 
   emailGmail                 String?
 
+  momoNumero                 String?
+  momoNom                    String?
+  momoWhatsapp               String?
+  momoActif                  Boolean  @default(false)
+
   updatedAt                  DateTime @updatedAt
+}
+
+model CodePaiement {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  email         String
+  nomApprenant  String
+  montant       Float
+  utilise       Boolean   @default(false)
+  dateUtilise   DateTime?
+  inscriptionId String?
+  createdBy     String
+  createdAt     DateTime  @default(now())
+
+  @@index([email])
+  @@index([code])
+}
+
+model TemplateEmail {
+  id        String   @id @default(cuid())
+  cle       String   @unique
+  nom       String
+  sujet     String
+  corps     String   @db.Text
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Sponsor {

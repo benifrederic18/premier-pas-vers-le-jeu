@@ -4,8 +4,9 @@ import { useState } from 'react';
 
 const DESTINATAIRES = [
   { value: 'TOUS', label: 'Tous les inscrits' },
-  { value: 'PAYES', label: 'Uniquement les payés' },
-  { value: 'NON_PAYES', label: 'Uniquement les non-payés' },
+  { value: 'PAYES', label: 'Payés (complet)' },
+  { value: 'TRANCHE1', label: '1ère tranche payée (2ème en attente)' },
+  { value: 'NON_PAYES', label: 'Pas encore payés' },
 ];
 
 const VARIABLES = ['{{prenoms}}', '{{nom}}', '{{email}}', '{{telephone}}'];

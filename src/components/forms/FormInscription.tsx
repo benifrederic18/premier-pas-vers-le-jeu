@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Etape1 from './Etape1';
 import Etape2 from './Etape2';
 import Etape3 from './Etape3';
 import SuccessPaiement from './SuccessPaiement';
+import MomoPopup from './MomoPopup';
+import DejaPayeModal from './DejaPayeModal';
 
 export type FormDataState = {
   nom: string;
@@ -37,11 +39,32 @@ const initialData: FormDataState = {
   modePaiement: 'COMPLET',
 };
 
+interface MomoInfo {
+  momoNumero: string;
+  momoNom: string;
+  momoWhatsapp: string;
+  momoActif: boolean;
+}
+
 export default function FormInscription() {
   const [etape, setEtape] = useState(1);
   const [formData, setFormData] = useState<FormDataState>(initialData);
   const [loading, setLoading] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [inscriptionSuccess, setInscriptionSuccess] = useState(false);
+
+  const [momoInfo, setMomoInfo] = useState<MomoInfo | null>(null);
+  const [showMomo, setShowMomo] = useState(false);
+  const [montantMomo, setMontantMomo] = useState<number>(30000);
+
+  const [showDejaPayeModal, setShowDejaPayeModal] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/parametres-publics')
+      .then((r) => r.json())
+      .then((d) => { if (d?.momoActif) setMomoInfo(d); })
+      .catch(() => {});
+  }, []);
 
   const update = (data: Partial<FormDataState>) => setFormData((prev) => ({ ...prev, ...data }));
 
@@ -71,12 +94,37 @@ export default function FormInscription() {
         body: JSON.stringify({ inscriptionId, modePaiement: formData.modePaiement }),
       });
       const { checkoutUrl: url, error: payError } = await payRes.json();
-      if (!payRes.ok) throw new Error(payError || 'Erreur lors de la création du paiement.');
+
+      if (!payRes.ok) {
+        // Payment failed — show MoMo fallback if configured
+        const montant = formData.modePaiement === 'TRANCHE' ? 15000 : 30000;
+        setMontantMomo(montant);
+        if (momoInfo?.momoActif) {
+          // Send MoMo instructions email automatically
+          try {
+            await fetch('/api/inscriptions/momo-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ inscriptionId, montant }),
+            });
+          } catch {}
+          setShowMomo(true);
+        } else {
+          throw new Error(payError || 'Erreur lors de la création du paiement.');
+        }
+        return;
+      }
 
       setCheckoutUrl(url);
       window.location.href = url;
     } catch (err: any) {
-      alert(err.message || 'Une erreur est survenue. Veuillez réessayer.');
+      const montant = formData.modePaiement === 'TRANCHE' ? 15000 : 30000;
+      setMontantMomo(montant);
+      if (momoInfo?.momoActif) {
+        setShowMomo(true);
+      } else {
+        alert(err.message || 'Une erreur est survenue. Veuillez réessayer.');
+      }
     } finally {
       setLoading(false);
     }
@@ -84,10 +132,32 @@ export default function FormInscription() {
 
   const steps = ['Informations', 'Profil', 'Options & Photo'];
 
+  if (inscriptionSuccess) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-16">
+        <div className="card-dark rounded-2xl p-10">
+          <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">🎭</div>
+          <h2 className="text-2xl font-black text-white mb-3">Inscription validée !</h2>
+          <p className="text-gray-400">Votre inscription a été confirmée. Un email de confirmation vous a été envoyé.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (checkoutUrl) return <SuccessPaiement url={checkoutUrl} />;
 
   return (
     <div className="max-w-2xl mx-auto">
+      {/* Déjà payé link */}
+      <div className="text-center mb-4">
+        <button
+          onClick={() => setShowDejaPayeModal(true)}
+          className="text-sm text-gray-500 hover:text-orange-400 transition-colors underline underline-offset-2"
+        >
+          🔑 J'ai déjà payé — valider mon inscription avec un code
+        </button>
+      </div>
+
       <div className="flex items-center justify-between mb-8">
         {steps.map((step, i) => (
           <div key={step} className="flex items-center flex-1">
@@ -121,46 +191,53 @@ export default function FormInscription() {
       <div className="card-dark rounded-2xl p-6 md:p-8">
         <AnimatePresence mode="wait">
           {etape === 1 && (
-            <motion.div
-              key="etape1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+            <motion.div key="etape1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
               <Etape1 data={formData} update={update} onNext={() => setEtape(2)} />
             </motion.div>
           )}
           {etape === 2 && (
-            <motion.div
-              key="etape2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+            <motion.div key="etape2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
               <Etape2 data={formData} update={update} onNext={() => setEtape(3)} onBack={() => setEtape(1)} />
             </motion.div>
           )}
           {etape === 3 && (
-            <motion.div
-              key="etape3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Etape3
-                data={formData}
-                update={update}
-                onSubmit={handleSubmitFinal}
-                onBack={() => setEtape(2)}
-                loading={loading}
-              />
+            <motion.div key="etape3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
+              <Etape3 data={formData} update={update} onSubmit={handleSubmitFinal} onBack={() => setEtape(2)} loading={loading} />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* MoMo fallback popup */}
+      {momoInfo && (
+        <MomoPopup
+          open={showMomo}
+          onClose={() => setShowMomo(false)}
+          info={{
+            momoNumero: momoInfo.momoNumero || '',
+            momoNom: momoInfo.momoNom || '',
+            momoWhatsapp: momoInfo.momoWhatsapp || '',
+            montant: montantMomo,
+            prenoms: formData.prenoms,
+            email: formData.email,
+          }}
+        />
+      )}
+
+      {/* Déjà payé modal */}
+      <DejaPayeModal
+        open={showDejaPayeModal}
+        onClose={() => setShowDejaPayeModal(false)}
+        onSuccess={() => { setShowDejaPayeModal(false); setInscriptionSuccess(true); }}
+        prefillData={{
+          nom: formData.nom,
+          prenoms: formData.prenoms,
+          telephone: formData.telephone,
+          email: formData.email,
+          age: formData.age,
+          modeParticipation: formData.modeParticipation,
+        }}
+      />
     </div>
   );
 }

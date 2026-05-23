@@ -18,6 +18,10 @@ const defaultParams = {
   youtubeUrl: '',
   tiktokUrl: '',
   emailGmail: '',
+  momoNumero: '',
+  momoNom: '',
+  momoWhatsapp: '',
+  momoActif: false,
 };
 
 export default function ParametresPage() {
@@ -229,6 +233,40 @@ export default function ParametresPage() {
             placeholder="contact@exemple.com"
             className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500 transition-colors"
           />
+        </div>
+
+        {/* MoMo fallback */}
+        <div className="card-dark rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-white">📱 Paiement MoMo (fallback)</h3>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={params.momoActif || false}
+                onChange={(e) => set('momoActif', e.target.checked)}
+                className="accent-orange-500"
+              />
+              <span className="text-sm text-gray-400">Activer</span>
+            </label>
+          </div>
+          <p className="text-gray-500 text-xs">Quand le paiement FedaPay échoue, ces infos seront affichées à l'apprenant.</p>
+          {[
+            { label: 'Numéro MoMo', key: 'momoNumero', placeholder: '229 XX XX XX XX', type: 'text' },
+            { label: 'Nom du compte MoMo', key: 'momoNom', placeholder: 'Nom affiché sur le compte', type: 'text' },
+            { label: 'WhatsApp (pour capture)', key: 'momoWhatsapp', placeholder: '22900000000 (avec indicatif)', type: 'text' },
+          ].map((field) => (
+            <div key={field.key}>
+              <label className="block text-sm text-gray-400 mb-1.5">{field.label}</label>
+              <input
+                type={field.type}
+                value={params[field.key] || ''}
+                onChange={(e) => set(field.key, e.target.value)}
+                placeholder={field.placeholder}
+                disabled={!params.momoActif}
+                className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500 transition-colors disabled:opacity-40"
+              />
+            </div>
+          ))}
         </div>
 
         {saved && (

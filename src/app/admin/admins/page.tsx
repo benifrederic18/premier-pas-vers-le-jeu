@@ -43,6 +43,20 @@ export default function AdminsPage() {
   const [error, setError] = useState('');
 
   const isSuperAdmin = (session?.user as any)?.role === 'SUPER_ADMIN';
+  const [bootstrapping, setBootstrapping] = useState(false);
+
+  const handleBootstrap = async () => {
+    if (!confirm('Vous promouvoir Super Admin ? (Uniquement si aucun Super Admin n\'existe encore)')) return;
+    setBootstrapping(true);
+    const res = await fetch('/api/admin/bootstrap', { method: 'POST' });
+    const data = await res.json();
+    setBootstrapping(false);
+    if (res.ok) {
+      alert('✅ Vous êtes maintenant Super Admin. Déconnectez-vous et reconnectez-vous pour actualiser vos droits.');
+    } else {
+      alert(data.error || 'Erreur lors de la promotion.');
+    }
+  };
 
   const load = () =>
     fetch('/api/admin/admins')
@@ -105,8 +119,16 @@ export default function AdminsPage() {
       </div>
 
       {!isSuperAdmin && (
-        <div className="card-dark rounded-2xl p-4 mb-6 border border-orange-500/20 text-orange-300 text-sm">
-          ⚠️ Seul un Super Admin peut gérer les administrateurs.
+        <div className="card-dark rounded-2xl p-4 mb-6 border border-orange-500/20">
+          <p className="text-orange-300 text-sm mb-3">⚠️ Seul un Super Admin peut gérer les administrateurs.</p>
+          <p className="text-gray-500 text-xs mb-3">Si vous êtes le premier utilisateur et qu'aucun Super Admin n'existe, vous pouvez vous promouvoir :</p>
+          <button
+            onClick={handleBootstrap}
+            disabled={bootstrapping}
+            className="bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 text-sm px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+          >
+            {bootstrapping ? 'En cours...' : '⭐ Me promouvoir Super Admin'}
+          </button>
         </div>
       )}
 

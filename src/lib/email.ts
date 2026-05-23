@@ -22,7 +22,9 @@ interface EmailParams {
     | 'RELANCE_TRANCHE2'
     | 'LIEN_WHATSAPP'
     | 'NOTIFICATION_SPONSOR'
-    | 'NOTIFICATION_ACTION';
+    | 'NOTIFICATION_ACTION'
+    | 'PAIEMENT_CODE'
+    | 'MOMO_INSTRUCTIONS';
   inscriptionId?: string;
 }
 
