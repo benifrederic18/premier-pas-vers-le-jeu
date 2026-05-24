@@ -1,12 +1,19 @@
 export const dynamic = 'force-dynamic';
 
-import { auth } from '@/lib/auth';
+import { cookies } from 'next/headers';
 import AdminNav from '@/components/admin/AdminNav';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  const cookieStore = await cookies();
+  // Same logic as middleware — check for session cookie presence
+  const hasSession = !!(
+    cookieStore.get('authjs.session-token')?.value ||
+    cookieStore.get('__Secure-authjs.session-token')?.value ||
+    cookieStore.get('next-auth.session-token')?.value
+  );
 
-  if (!session) {
+  if (!hasSession) {
+    // Login page or unauthenticated — no sidebar
     return <>{children}</>;
   }
 
