@@ -39,10 +39,10 @@ const initialData: FormDataState = {
 };
 
 interface MomoInfo {
-  momoNumero: string;
-  momoNom: string;
-  momoWhatsapp: string;
-  momoActif: boolean;
+  momoNumero?: string;
+  momoNom?: string;
+  momoWhatsapp?: string;
+  momoActif?: boolean;
 }
 
 export default function FormInscription() {
@@ -61,7 +61,7 @@ export default function FormInscription() {
   useEffect(() => {
     fetch('/api/parametres-publics')
       .then((r) => r.json())
-      .then((d) => { if (d?.momoActif) setMomoInfo(d); })
+      .then((d) => { if (d) setMomoInfo(d); })
       .catch(() => {});
 
     // Read code from URL params (e.g. /?code=A3F9B2C1#inscription)
@@ -100,11 +100,10 @@ export default function FormInscription() {
       const { checkoutUrl: url, error: payError } = await payRes.json();
 
       if (!payRes.ok) {
-        // Payment failed — show MoMo fallback if configured
         const montant = formData.modePaiement === 'TRANCHE' ? 15000 : 30000;
         setMontantMomo(montant);
+        // Send MoMo instructions email only if MoMo is configured
         if (momoInfo?.momoActif) {
-          // Send MoMo instructions email automatically
           try {
             await fetch('/api/inscriptions/momo-email', {
               method: 'POST',
@@ -112,23 +111,19 @@ export default function FormInscription() {
               body: JSON.stringify({ inscriptionId, montant }),
             });
           } catch {}
-          setShowMomo(true);
-        } else {
-          throw new Error(payError || 'Erreur lors de la création du paiement.');
         }
+        // Always show the popup — never show a raw error
+        setShowMomo(true);
         return;
       }
 
       setCheckoutUrl(url);
       window.location.href = url;
-    } catch (err: any) {
+    } catch {
       const montant = formData.modePaiement === 'TRANCHE' ? 15000 : 30000;
       setMontantMomo(montant);
-      if (momoInfo?.momoActif) {
-        setShowMomo(true);
-      } else {
-        alert(err.message || 'Une erreur est survenue. Veuillez réessayer.');
-      }
+      // Always show the popup — never show a raw error
+      setShowMomo(true);
     } finally {
       setLoading(false);
     }
@@ -221,21 +216,20 @@ export default function FormInscription() {
         </AnimatePresence>
       </div>
 
-      {/* MoMo fallback popup */}
-      {momoInfo && (
-        <MomoPopup
-          open={showMomo}
-          onClose={() => setShowMomo(false)}
-          info={{
-            momoNumero: momoInfo.momoNumero || '',
-            momoNom: momoInfo.momoNom || '',
-            momoWhatsapp: momoInfo.momoWhatsapp || '',
-            montant: montantMomo,
-            prenoms: formData.prenoms,
-            email: formData.email,
-          }}
-        />
-      )}
+      {/* MoMo fallback popup — always rendered, adapts content */}
+      <MomoPopup
+        open={showMomo}
+        onClose={() => setShowMomo(false)}
+        info={{
+          momoActif: momoInfo?.momoActif || false,
+          momoNumero: momoInfo?.momoNumero || '',
+          momoNom: momoInfo?.momoNom || '',
+          momoWhatsapp: momoInfo?.momoWhatsapp || '',
+          montant: montantMomo,
+          prenoms: formData.prenoms,
+          email: formData.email,
+        }}
+      />
 
     </div>
   );
