@@ -95,7 +95,14 @@ export default function AdminNav() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-white/5 shrink-0">
+        <div className="p-4 border-t border-white/5 shrink-0 space-y-1">
+          <Link
+            href="/"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-white hover:bg-white/5 transition-all"
+          >
+            <span>🌐</span>
+            <span>Voir le site</span>
+          </Link>
           <button
             onClick={() => signOut({ callbackUrl: '/admin/login' })}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-red-400 hover:bg-red-500/5 transition-all w-full"
@@ -164,7 +171,15 @@ export default function AdminNav() {
               ))}
             </nav>
 
-            <div className="p-4 border-t border-white/5">
+            <div className="p-4 border-t border-white/5 space-y-1">
+              <Link
+                href="/"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-white hover:bg-white/5 transition-all"
+              >
+                <span>🌐</span>
+                <span>Voir le site</span>
+              </Link>
               <button
                 onClick={() => signOut({ callbackUrl: '/admin/login' })}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-red-400 hover:bg-red-500/5 transition-all w-full"

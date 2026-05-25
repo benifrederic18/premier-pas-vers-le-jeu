@@ -37,6 +37,10 @@ export async function PUT(req: NextRequest) {
     momoNom: body.momoNom || null,
     momoWhatsapp: body.momoWhatsapp || null,
     momoActif: Boolean(body.momoActif),
+    celtisNumero: body.celtisNumero || null,
+    celtisNom: body.celtisNom || null,
+    moovNumero: body.moovNumero || null,
+    moovNom: body.moovNom || null,
   };
 
   const params = existing

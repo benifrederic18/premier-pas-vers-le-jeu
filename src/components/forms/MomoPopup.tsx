@@ -3,10 +3,14 @@
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface MomoInfo {
-  momoNumero: string;
-  momoNom: string;
-  momoWhatsapp: string;
+  momoNumero?: string;
+  momoNom?: string;
+  momoWhatsapp?: string;
   momoActif?: boolean;
+  celtisNumero?: string;
+  celtisNom?: string;
+  moovNumero?: string;
+  moovNom?: string;
   montant?: number;
   prenoms?: string;
   email?: string;
@@ -18,8 +22,27 @@ interface Props {
   info: MomoInfo;
 }
 
+interface PaymentOption {
+  label: string;
+  numero: string;
+  nom: string;
+  color: string;
+}
+
 export default function MomoPopup({ open, onClose, info }: Props) {
-  const momoConfigured = info.momoActif && info.momoNumero;
+  const options: PaymentOption[] = [];
+
+  if (info.momoActif && info.momoNumero) {
+    options.push({ label: 'MoMo', numero: info.momoNumero, nom: info.momoNom || '', color: 'text-yellow-400' });
+  }
+  if (info.celtisNumero) {
+    options.push({ label: 'Celtis', numero: info.celtisNumero, nom: info.celtisNom || '', color: 'text-blue-400' });
+  }
+  if (info.moovNumero) {
+    options.push({ label: 'Moov', numero: info.moovNumero, nom: info.moovNom || '', color: 'text-green-400' });
+  }
+
+  const hasOptions = options.length > 0;
 
   const whatsappText = encodeURIComponent(
     `Bonjour, je viens d'effectuer un paiement de ${info.montant?.toLocaleString('fr-FR') ?? ''} FCFA pour la formation Premier Pas Vers Le Jeu.\nNom : ${info.prenoms ?? ''}\nEmail : ${info.email ?? ''}`
@@ -57,43 +80,43 @@ export default function MomoPopup({ open, onClose, info }: Props) {
 
             <div className="text-center mb-6">
               <div className="w-14 h-14 bg-orange-500/20 rounded-full flex items-center justify-center text-2xl mx-auto mb-3">
-                {momoConfigured ? '📱' : '⚠️'}
+                {hasOptions ? '📱' : '⚠️'}
               </div>
               <h3 className="text-white font-black text-xl">
-                {momoConfigured ? 'Paiement par MoMo' : 'Paiement temporairement indisponible'}
+                {hasOptions ? 'Paiement direct' : 'Paiement temporairement indisponible'}
               </h3>
               <p className="text-gray-400 text-sm mt-1">
-                {momoConfigured
+                {hasOptions
                   ? 'Le paiement en ligne n\'a pas pu être traité. Effectuez un virement direct.'
                   : 'Le paiement en ligne n\'a pas pu être traité pour le moment.'}
               </p>
             </div>
 
-            {momoConfigured ? (
+            {hasOptions ? (
               <>
-                {/* MoMo info */}
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3 mb-5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-500 text-sm">Numéro MoMo</span>
-                    <span className="text-white font-bold text-lg tracking-wide">{info.momoNumero}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-500 text-sm">Nom du compte</span>
-                    <span className="text-white font-semibold">{info.momoNom}</span>
-                  </div>
-                  {info.montant && (
-                    <div className="flex items-center justify-between border-t border-white/10 pt-3">
-                      <span className="text-gray-500 text-sm">Montant à envoyer</span>
-                      <span className="text-orange-400 font-black text-xl">{info.montant.toLocaleString('fr-FR')} FCFA</span>
+                {/* Payment options */}
+                <div className="space-y-3 mb-5">
+                  {options.map((opt) => (
+                    <div key={opt.label} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-xs font-bold uppercase tracking-widest ${opt.color}`}>{opt.label}</span>
+                        {info.montant && (
+                          <span className="text-orange-400 font-black text-lg">{info.montant.toLocaleString('fr-FR')} FCFA</span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white font-bold text-xl tracking-wide">{opt.numero}</span>
+                        <span className="text-gray-400 text-sm">{opt.nom}</span>
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
 
                 {/* Steps */}
                 <div className="space-y-2 mb-5">
                   <p className="text-gray-500 text-xs uppercase tracking-widest font-semibold">Étapes</p>
                   {[
-                    '1. Effectuez le virement MoMo au numéro ci-dessus',
+                    '1. Effectuez le virement au numéro ci-dessus',
                     '2. Prenez une capture d\'écran de la confirmation',
                     '3. Envoyez-la par WhatsApp avec votre nom',
                   ].map((step) => (
@@ -120,7 +143,7 @@ export default function MomoPopup({ open, onClose, info }: Props) {
                 )}
               </>
             ) : (
-              /* Fallback when MoMo is not configured */
+              /* Fallback when no payment method is configured */
               <div className="mb-5 space-y-3">
                 <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
                   <p className="text-white font-semibold text-sm mb-1">Votre pré-inscription est bien enregistrée ✅</p>

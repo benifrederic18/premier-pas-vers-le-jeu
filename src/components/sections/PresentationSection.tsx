@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 
 const infos = [
-  { icon: '📅', label: 'Dates', value: '24 au 27 Juin 2025' },
+  { icon: '📅', label: 'Dates', value: '24 au 27 Juin 2026' },
   { icon: '💰', label: 'Tarif', value: '30.000 FCFA' },
   { icon: '🎁', label: 'Restitution', value: 'Lots a gagner' },
 ];

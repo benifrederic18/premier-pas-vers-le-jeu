@@ -43,6 +43,10 @@ interface MomoInfo {
   momoNom?: string;
   momoWhatsapp?: string;
   momoActif?: boolean;
+  celtisNumero?: string;
+  celtisNom?: string;
+  moovNumero?: string;
+  moovNom?: string;
 }
 
 export default function FormInscription() {
@@ -225,6 +229,10 @@ export default function FormInscription() {
           momoNumero: momoInfo?.momoNumero || '',
           momoNom: momoInfo?.momoNom || '',
           momoWhatsapp: momoInfo?.momoWhatsapp || '',
+          celtisNumero: momoInfo?.celtisNumero || '',
+          celtisNom: momoInfo?.celtisNom || '',
+          moovNumero: momoInfo?.moovNumero || '',
+          moovNom: momoInfo?.moovNom || '',
           montant: montantMomo,
           prenoms: formData.prenoms,
           email: formData.email,

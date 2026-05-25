@@ -70,22 +70,21 @@ export default function SponsorsSection() {
         {/* Sponsors */}
         {sponsorsList.length > 0 && (
           <div className="mb-10">
-            <p className="text-gray-600 text-xs uppercase tracking-widest text-center mb-4">Sponsors</p>
-            <div className="flex flex-wrap items-center justify-center gap-6">
+            <div className="flex flex-wrap items-center justify-center gap-10">
               {sponsorsList.map((s, i) => (
                 <motion.a
                   key={s.id}
                   href={s.siteWeb || '#'}
                   target={s.siteWeb ? '_blank' : '_self'}
                   rel="noopener noreferrer"
-                  initial={{ opacity: 0, scale: 0.8 }}
+                  initial={{ opacity: 0, scale: 0.9 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.05 }}
                   viewport={{ once: true }}
-                  className="group bg-white/5 hover:bg-white/10 border border-white/5 hover:border-orange-500/30 rounded-2xl p-5 transition-all"
+                  className="group transition-all"
                   title={s.nom}
                 >
-                  <img src={s.logoUrl} alt={s.nom} className="h-12 w-auto object-contain filter brightness-75 group-hover:brightness-100 transition-all" />
+                  <img src={s.logoUrl} alt={s.nom} className="h-14 w-auto object-contain opacity-60 group-hover:opacity-100 transition-opacity" />
                 </motion.a>
               ))}
             </div>
@@ -95,22 +94,21 @@ export default function SponsorsSection() {
         {/* Partenaires */}
         {partnersList.length > 0 && (
           <div className="mb-12">
-            <p className="text-gray-600 text-xs uppercase tracking-widest text-center mb-4">Partenaires</p>
-            <div className="flex flex-wrap items-center justify-center gap-4">
+            <div className="flex flex-wrap items-center justify-center gap-8">
               {partnersList.map((s, i) => (
                 <motion.a
                   key={s.id}
                   href={s.siteWeb || '#'}
                   target={s.siteWeb ? '_blank' : '_self'}
                   rel="noopener noreferrer"
-                  initial={{ opacity: 0, scale: 0.8 }}
+                  initial={{ opacity: 0, scale: 0.9 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.05 }}
                   viewport={{ once: true }}
-                  className="group bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-xl p-4 transition-all"
+                  className="group transition-all"
                   title={s.nom}
                 >
-                  <img src={s.logoUrl} alt={s.nom} className="h-8 w-auto object-contain filter brightness-60 group-hover:brightness-100 transition-all" />
+                  <img src={s.logoUrl} alt={s.nom} className="h-10 w-auto object-contain opacity-50 group-hover:opacity-100 transition-opacity" />
                 </motion.a>
               ))}
             </div>

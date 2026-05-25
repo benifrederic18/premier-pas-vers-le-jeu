@@ -117,20 +117,23 @@ export default function FooterSection() {
           <div>
             <h4 className="font-semibold text-white mb-3">Formation</h4>
             <div className="space-y-2 text-gray-500 text-sm">
-              <p>📅 24 au 27 Juin 2025</p>
+              <p>📅 24 au 27 Juin 2026</p>
               <p>💰 30 000 FCFA</p>
               <p className="text-xs text-gray-600">Paiement en 2 tranches disponible</p>
             </div>
           </div>
         </div>
         <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-600">
-          <p>© 2025 Premier Pas Vers Le Jeu. Tous droits réservés.</p>
+          <p>© 2026 Premier Pas Vers Le Jeu. Tous droits réservés.</p>
           <div className="flex gap-4">
             <a href="/politique-confidentialite" className="hover:text-gray-400 transition-colors">
               Politique de confidentialité
             </a>
             <a href="/mentions-legales" className="hover:text-gray-400 transition-colors">
               Mentions légales
+            </a>
+            <a href="/admin" className="hover:text-gray-400 transition-colors">
+              Administration
             </a>
           </div>
         </div>

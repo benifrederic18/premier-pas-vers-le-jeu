@@ -8,8 +8,8 @@ const defaultParams = {
   placesDisponibles: 50,
   tarifFormation: 30000,
   tarifTranche: 15000,
-  dateDebut: '2025-06-24',
-  dateFin: '2025-06-27',
+  dateDebut: '2026-06-24',
+  dateFin: '2026-06-27',
   delaiRelanceMinutes: 10,
   delaiRelanceTranche2Jours: 7,
   lienWhatsapp: '',
@@ -22,6 +22,10 @@ const defaultParams = {
   momoNom: '',
   momoWhatsapp: '',
   momoActif: false,
+  celtisNumero: '',
+  celtisNom: '',
+  moovNumero: '',
+  moovNom: '',
 };
 
 export default function ParametresPage() {
@@ -264,6 +268,48 @@ export default function ParametresPage() {
                 placeholder={field.placeholder}
                 disabled={!params.momoActif}
                 className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500 transition-colors disabled:opacity-40"
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Celtis */}
+        <div className="card-dark rounded-2xl p-6 space-y-4">
+          <h3 className="font-semibold text-white">💳 Paiement Celtis (fallback)</h3>
+          <p className="text-gray-500 text-xs">Affiché en option de paiement direct si renseigné.</p>
+          {[
+            { label: 'Numéro Celtis', key: 'celtisNumero', placeholder: '229 XX XX XX XX' },
+            { label: 'Nom du compte Celtis', key: 'celtisNom', placeholder: 'Nom affiché sur le compte' },
+          ].map((field) => (
+            <div key={field.key}>
+              <label className="block text-sm text-gray-400 mb-1.5">{field.label}</label>
+              <input
+                type="text"
+                value={params[field.key] || ''}
+                onChange={(e) => set(field.key, e.target.value)}
+                placeholder={field.placeholder}
+                className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500 transition-colors"
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Moov */}
+        <div className="card-dark rounded-2xl p-6 space-y-4">
+          <h3 className="font-semibold text-white">📶 Paiement Moov (fallback)</h3>
+          <p className="text-gray-500 text-xs">Affiché en option de paiement direct si renseigné.</p>
+          {[
+            { label: 'Numéro Moov', key: 'moovNumero', placeholder: '229 XX XX XX XX' },
+            { label: 'Nom du compte Moov', key: 'moovNom', placeholder: 'Nom affiché sur le compte' },
+          ].map((field) => (
+            <div key={field.key}>
+              <label className="block text-sm text-gray-400 mb-1.5">{field.label}</label>
+              <input
+                type="text"
+                value={params[field.key] || ''}
+                onChange={(e) => set(field.key, e.target.value)}
+                placeholder={field.placeholder}
+                className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500 transition-colors"
               />
             </div>
           ))}
